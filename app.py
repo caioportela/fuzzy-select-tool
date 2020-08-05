@@ -1,9 +1,17 @@
+from io import BytesIO
+
 import matplotlib.pyplot as plt
+from flask import Flask, send_file
 from skimage import color, io
 from skimage.filters import sobel
 from skimage.segmentation import felzenszwalb, flood
 
-def main():
+app = Flask(__name__)
+
+@app.route('/paint')
+def paint():
+    """Return the picture with wall color changed."""
+
     img = io.imread('interior1.jpg')  # Open image
 
     img_hsv = color.rgb2hsv(img)  # Convert color channels
@@ -28,15 +36,24 @@ def main():
     img_hsv[mask, 1] = 0.8
 
     # Setup image plot
-    fig, ax = plt.subplots(1, 2, figsize=(12, 10))
+    # fig, ax = plt.subplots(1, 2, figsize=(12, 10))
+    #
+    # ax[0].imshow(img)
+    # ax[0].set_title('Original')
+    #
+    # ax[1].imshow(color.hsv2rgb(img_hsv))
+    # ax[1].set_title('Customized')
 
-    ax[0].imshow(img)
-    ax[0].set_title('Original')
+    img_final = color.hsv2rgb(img_hsv)  # Convert color channels
 
-    ax[1].imshow(color.hsv2rgb(img_hsv))
-    ax[1].set_title('Customized')
+    # Create a byte object to save the image
+    file_object = BytesIO()
 
-    plt.show()
+    # Save image on the byte object
+    io.imsave(file_object, img_final, plugin='pil')
+    file_object.seek(0)
+
+    return send_file(file_object, mimetype='image/jpeg')
 
 if __name__ == '__main__':
-    main()
+    app.run()
