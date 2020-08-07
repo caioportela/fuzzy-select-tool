@@ -1,16 +1,19 @@
 from io import BytesIO
 
 import matplotlib.pyplot as plt
-from flask import Flask, send_file
+from flask import Flask, request, send_file
 from skimage import color, io
 from skimage.filters import sobel
 from skimage.segmentation import felzenszwalb, flood
 
 app = Flask(__name__)
 
-@app.route('/paint')
+@app.route('/paint', methods=['POST'])
 def paint():
     """Return the picture with wall color changed."""
+
+    coord_x = int(request.form.get('coord_x'))  # Get X coordinate
+    coord_y = int(request.form.get('coord_y'))  # Get Y coordinate
 
     img = io.imread('interior1.jpg')  # Open image
 
@@ -24,7 +27,7 @@ def paint():
     segments_fz = felzenszwalb(edge_sobel, scale=100, sigma=1, min_size=150)
 
     # Create a mask of flooded pixels
-    mask = flood(segments_fz, (400, 1600), tolerance=0.5)  # interior1
+    mask = flood(segments_fz, (coord_y, coord_x), tolerance=0.5)
     # mask = flood(segments_fz, (130, 700), tolerance=0.5)  # interior2
     # mask = flood(segments_fz, (90, 450), tolerance=0.5)  # interior3
     # mask = flood(segments_fz, (130, 700), tolerance=0.5)  # interior4
