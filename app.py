@@ -1,3 +1,4 @@
+from colorsys import rgb_to_hsv
 from io import BytesIO
 
 import matplotlib.pyplot as plt
@@ -8,6 +9,18 @@ from skimage.segmentation import felzenszwalb, flood
 
 app = Flask(__name__)
 
+def hex_to_hsv(hex):
+    """Convert hexadecimal string in HSV color."""
+
+    hex = hex.lstrip('#')
+    hlen = len(hex)
+
+    # Convert HEX to RGB
+    r, g, b = [(int(hex[i:i + (hlen // 3)], 16) / 255) for i in range(0, hlen, hlen // 3)]
+
+    #Convert RGB to HSV
+    return rgb_to_hsv(r, g, b)
+
 @app.route('/paint', methods=['POST'])
 def paint():
     """Return the picture with wall color changed."""
@@ -16,6 +29,9 @@ def paint():
 
     coord_x = int(request.form.get('coord_x'))  # Get X coordinate from request
     coord_y = int(request.form.get('coord_y'))  # Get Y coordinate from request
+
+    hex = request.form.get('color')  # Get color from request
+    hue, sat, val = hex_to_hsv(hex)  # Convert colot to HSV code
 
     img = io.imread(file)  # Open image
 
@@ -32,10 +48,13 @@ def paint():
     mask = flood(segments_fz, (coord_y, coord_x), tolerance=0.5)
 
     # Set pixels of mask to new value for hue channel
-    img_hsv[mask, 0] = 0.15
+    img_hsv[mask, 0] = hue
 
     # Set pixels of mask to new value for saturation channel
-    img_hsv[mask, 1] = 0.8
+    img_hsv[mask, 1] = sat
+
+    # Set pixels of mask to new value for value/brightness channel
+    img_hsv[mask, 2] = val
 
     # Convert color channels
     img_final = color.hsv2rgb(img_hsv)
